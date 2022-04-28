@@ -491,6 +491,44 @@ class StarmniBot(sc2.BotAI):
             return FAILED_REWARD
 
     def finish_episode(self, game_result):
+        print("Game over!")
+        if game_result == sc2.Result.Victory: # TODO: Modify this to look at how many of the correct unit we made
+            for index in range(len(self.agent_list), 0, -1):
+                self.dead_agent_list.append(self.agent_list[index - 1])
+                self.dead_agent_list[-1].save_reward(-1)
+            del self.agent_list[:]
+        elif game_result == sc2.Result.Tie:
+            reward = 0
+        elif game_result == sc2.Result.Defeat:
+            reward = 0  # - min(self.itercount/500.0, 900) + self.units.amount
+        else:
+            # ???
+            return -13
+        if len(self.agent_list) > 0:
+            reward_sum = sum(self.agent_list[0].replay_buffer.rewards_list)
+        else:
+            reward_sum = sum(self.dead_agent_list[-1].replay_buffer.rewards_list)
+
+        for agent_index in range(len(self.agent_list)):
+            rewards_list, advantage_list, deeper_advantage_list = discount_reward(
+                self.agent_list[agent_index].replay_buffer.rewards_list,
+                self.agent_list[agent_index].replay_buffer.value_list,
+                self.agent_list[agent_index].replay_buffer.deeper_value_list)
+            self.agent_list[agent_index].replay_buffer.rewards_list = rewards_list
+            self.agent_list[agent_index].replay_buffer.advantage_list = advantage_list
+            self.agent_list[agent_index].replay_buffer.deeper_advantage_list = deeper_advantage_list
+        for dead_agent_index in range(len(self.dead_agent_list)):
+            rewards_list, advantage_list, deeper_advantage_list = discount_reward(
+                self.dead_agent_list[dead_agent_index].replay_buffer.rewards_list,
+                self.dead_agent_list[dead_agent_index].replay_buffer.value_list,
+                self.dead_agent_list[dead_agent_index].replay_buffer.deeper_value_list)
+            self.dead_agent_list[dead_agent_index].replay_buffer.rewards_list = rewards_list
+            self.dead_agent_list[dead_agent_index].replay_buffer.advantage_list = advantage_list
+            self.dead_agent_list[dead_agent_index].replay_buffer.deeper_advantage_list = deeper_advantage_list
+        return self.dead_enemies * self.kill_reward - len(self.dead_agent_list)
+
+'''
+    def finish_episode(self, game_result):
         # TODO: replace this bit with the proper minigame reset protocols to make things FAST
         # The map has a trigger that looks for someone sending the word "reset" exactly in chat
         # await self.chat_send("reset")
@@ -541,7 +579,7 @@ class StarmniBot(sc2.BotAI):
         self.agent.replay_buffer.rewards_list = rewards.detach().clone().cpu().numpy().tolist()
         self.agent.replay_buffer.advantage_list = advantages.detach().clone().cpu().numpy().tolist()
         return reward_sum
-
+'''
 
 def run_episode(q, main_agent):
     result = None
@@ -551,7 +589,7 @@ def run_episode(q, main_agent):
 
     try: # TODO: replace this with the correct minigame map and set up the game
         result = sc2.run_game(sc2.maps.get("BuildBCs"),
-                              [Bot(Race.Terran, bot)],
+                              [Bot(Race.Protoss, bot)],
                               realtime=False)
     except KeyboardInterrupt:
         result = [-1, -1]
@@ -696,7 +734,7 @@ def bernoulli_main(episodes, agent_in, num_processes):
 
 
 if __name__ == '__main__':
-    # TODO: change the agent types to include our own policy network
+    # TODO: change the agent types to include our own policy network?
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--agent_type", help="architecture of agent to run", type=str, default='djinn')
     parser.add_argument("-e", "--episodes", help="how many episodes", type=int, default=1000)
