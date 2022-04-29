@@ -496,7 +496,7 @@ class StarmniBot(sc2.BotAI):
 
         # TODO: count the number of marines at the end of the game
         print("Game over!")
-        
+
         return self.units(UnitTypeId.MARINE).amount
 
 '''
@@ -559,35 +559,44 @@ def run_episode(q, main_agent):
 
     bot = StarmniBot(rl_agent=agent_in)
 
-    viz = False
-    save_replay = False
-    steps_per_episode = 0  # 0 actually means unlimited
-    MAX_EPISODES = 35
     MAX_STEPS = 400
     steps = 0
 
+    for j in range(MAX_STEPS):
+        steps += 1
+        bot.on_step(j)  # this already sends the actions to the server
+    ep_reward = bot.finish_episode(result)  # TODO: get this to properly calculate the reward of the episode
+    print('Episode Reward: {}'.format(ep_reward))
+    bot.agent.end_episode(ep_reward)
+    if q is not None:
+        try:
+            q.append([ep_reward, bot.agent.replay_buffer.__getstate__()])
+        except RuntimeError as e:
+            print(e)
+            return [ep_reward, bot.agent.replay_buffer.__getstate__()]
+    return q
+
+def main(episodes, agent, num_processes, game_mode):
+    running_reward_array = []
     # create a map
+    viz = False
     map = maps.get('BuildMarines')
 
-    # create an envirnoment
     with sc2_env.SC2Env(map_name=map,
                         visualize=viz) as env:
-        agent = bot
-        for i in range(MAX_EPISODES):
-            print('Starting episode {}'.format(i))
+        for episode in range(1, episodes+1):
+            print('Starting episode {}'.format(episode))
             _ = env.reset()
-            for j in range(MAX_STEPS):
-                steps += 1
-                agent.on_step(j)  # this already sends the actions to the server
-            ep_reward = bot.finish_episode(result)  # TODO: get this to properly calculate the reward of the episode
-            print('Episode Reward: {}'.format(ep_reward))
-        if q is not None:
-            try:
-                q.put([ep_reward, bot.agent.replay_buffer.__getstate__()])
-            except RuntimeError as e:
-                print(e)
-                return [ep_reward, bot.agent.replay_buffer.__getstate__()]
-        return [ep_reward, bot.agent.replay_buffer.__getstate__()]
+            reward = run_episode(None, main_agent=agent)[0]
+            running_reward_array.append(reward)
+            agent.end_episode(reward, num_processes)
+            if episode % 50 == 0:
+                print(f'Episode {episode}  Last Reward: {reward}')
+            if episode % 300 == 0:
+                agent.save('../models/' + str(episode) + 'th')
+                agent.lower_lr()
+
+    return running_reward_array
 
 
 # def main(episodes, agent_in, num_processes, reset_on_fail=False):
@@ -634,84 +643,6 @@ def run_episode(q, main_agent):
 #     return running_reward_array
 
 
-def bernoulli_main(episodes, agent_in, num_processes):
-    def bernoulli_test(p, n, k, alpha):
-        coef = math.factorial(n) / (math.factorial(k) * math.factorial(n - k))
-        p_to_k = p ** k
-        q_to_n_k = (1 - p) ** (n - k)
-        test_res = coef * p_to_k * q_to_n_k
-        if test_res < alpha:
-            return True
-        else:
-            return False
-
-    win_prob = 0.25
-    min_games = 15
-    alpha = 0.05
-    k, n, successful_runs, master_reward, reward, running_reward = 0, 0, 0, 0, 0, 0
-    find_new_step = True
-    running_reward_array = []
-    # lowered = False
-    agent = agent_in.duplicate()
-    # mp.set_start_method('spawn')
-    for episode in range(6, episodes):
-        try:
-            last_agent = agent.duplicate()
-            if find_new_step:
-                successful_runs = 0
-                master_reward, reward, running_reward = 0, 0, 0
-                tuple_out = run_episode(None,
-                                        agent)
-                if tuple_out[0] != -13:
-                    master_reward += tuple_out[0]
-                    running_reward_array.append(tuple_out[0])
-                    agent.replay_buffer.extend(tuple_out[1])
-                    successful_runs += 1
-            if successful_runs > 0 or not find_new_step:  # if we have a non-empty replay buffer
-                reward = master_reward
-                agent.end_episode(reward, num_processes)  # take a gradient step
-                running_reward = sum(running_reward_array[-100:]) / float(min(100.0, len(running_reward_array)))
-                while True:  # Do the bernoulli testing
-
-                    tuple_out = run_episode(None, agent)
-                    if tuple_out[0] != -13:
-                        if tuple_out[1]['rewards'][-1] > 0:
-                            k += 1
-                        n += 1
-                        if n < num_processes:
-                            master_reward += tuple_out[0]
-                            agent.replay_buffer.extend(tuple_out[1])
-                    if n >= min_games:
-                        new_win_prob = float(k)/float(n)
-                        if bernoulli_test(p=win_prob, n=n, k=k, alpha=alpha):
-                            if new_win_prob > win_prob:
-                                win_prob = new_win_prob
-                                k = 0
-                                n = 0
-                                find_new_step = False
-                                agent.save(f'../models/{episode}')
-                                break
-                            else:
-                                agent = last_agent
-                                k = 0
-                                n = 0
-                                find_new_step = True
-                                break
-                    print(f"After this episode, n={n}")
-                    if n > 100 and k > n*.95:
-                        print("Finishing this model")
-                        agent.save('FINAL')
-                        return
-
-            if episode % 50 == 0:
-                print(f'Episode {episode}  Last Reward: {reward}  Average Reward: {running_reward}')
-                # print(f"Running {num_processes} concurrent simulations per episode")
-        except RuntimeError as e:
-            print(e)
-            find_new_step = True
-            time.sleep(5)
-            continue
-    return running_reward_array
 
 
 if __name__ == '__main__':
