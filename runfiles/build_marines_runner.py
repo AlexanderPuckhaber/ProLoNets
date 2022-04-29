@@ -580,9 +580,9 @@ def main(episodes, agent, num_processes, game_mode):
     running_reward_array = []
     # create a map
     viz = False
-    map = maps.get('BuildMarines')
+    marines_map = maps.get('BuildMarines')
 
-    with sc2_env.SC2Env(map_name=map,
+    with sc2_env.SC2Env(map_name=marines_map,
                         visualize=viz) as env:
         for episode in range(1, episodes+1):
             print('Starting episode {}'.format(episode))
@@ -704,6 +704,6 @@ if __name__ == '__main__':
 
     # main(episodes=NUM_EPS, agent_in=policy_agent, num_processes=NUM_PROCS, reset_on_fail=True)
     policy_agent.load('../models/5')
-    bernoulli_main(episodes=NUM_EPS, agent_in=policy_agent, num_processes=NUM_PROCS)
+    main(episodes=NUM_EPS, agent=policy_agent, num_processes=NUM_PROCS, game_mode=None)
     with open(bot_name+'time.txt', 'a') as writer:
         writer.write(str(time.time()-start_time))
