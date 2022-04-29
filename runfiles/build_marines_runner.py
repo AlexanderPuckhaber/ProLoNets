@@ -496,28 +496,8 @@ class StarmniBot(sc2.BotAI):
 
         # TODO: count the number of marines at the end of the game
         print("Game over!")
-        if len(self.agent_list) > 0:
-            reward_sum = sum(self.agent_list[0].replay_buffer.rewards_list)
-        else:
-            reward_sum = sum(self.dead_agent_list[-1].replay_buffer.rewards_list)
-
-        for agent_index in range(len(self.agent_list)):
-            rewards_list, advantage_list, deeper_advantage_list = discount_reward(
-                self.agent_list[agent_index].replay_buffer.rewards_list,
-                self.agent_list[agent_index].replay_buffer.value_list,
-                self.agent_list[agent_index].replay_buffer.deeper_value_list)
-            self.agent_list[agent_index].replay_buffer.rewards_list = rewards_list
-            self.agent_list[agent_index].replay_buffer.advantage_list = advantage_list
-            self.agent_list[agent_index].replay_buffer.deeper_advantage_list = deeper_advantage_list
-        for dead_agent_index in range(len(self.dead_agent_list)):
-            rewards_list, advantage_list, deeper_advantage_list = discount_reward(
-                self.dead_agent_list[dead_agent_index].replay_buffer.rewards_list,
-                self.dead_agent_list[dead_agent_index].replay_buffer.value_list,
-                self.dead_agent_list[dead_agent_index].replay_buffer.deeper_value_list)
-            self.dead_agent_list[dead_agent_index].replay_buffer.rewards_list = rewards_list
-            self.dead_agent_list[dead_agent_index].replay_buffer.advantage_list = advantage_list
-            self.dead_agent_list[dead_agent_index].replay_buffer.deeper_advantage_list = deeper_advantage_list
-        return self.dead_enemies * self.kill_reward - len(self.dead_agent_list)
+        
+        return self.units(UnitTypeId.MARINE).amount
 
 '''
     def finish_episode(self, game_result):
