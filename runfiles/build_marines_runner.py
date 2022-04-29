@@ -19,6 +19,8 @@ import numpy as np
 import time
 import torch.multiprocessing as mp
 import argparse
+from pysc2.env import sc2_env
+from pysc2 import maps
 
 DEBUG = True
 SUPER_DEBUG = True
@@ -491,19 +493,9 @@ class StarmniBot(sc2.BotAI):
             return FAILED_REWARD
 
     def finish_episode(self, game_result):
+
+        # TODO: count the number of marines at the end of the game
         print("Game over!")
-        if game_result == sc2.Result.Victory: # TODO: Modify this to look at how many of the correct unit we made
-            for index in range(len(self.agent_list), 0, -1):
-                self.dead_agent_list.append(self.agent_list[index - 1])
-                self.dead_agent_list[-1].save_reward(-1)
-            del self.agent_list[:]
-        elif game_result == sc2.Result.Tie:
-            reward = 0
-        elif game_result == sc2.Result.Defeat:
-            reward = 0  # - min(self.itercount/500.0, 900) + self.units.amount
-        else:
-            # ???
-            return -13
         if len(self.agent_list) > 0:
             reward_sum = sum(self.agent_list[0].replay_buffer.rewards_list)
         else:
@@ -587,26 +579,35 @@ def run_episode(q, main_agent):
 
     bot = StarmniBot(rl_agent=agent_in)
 
-    try: # TODO: replace this with the correct minigame map and set up the game
-        result = sc2.run_game(sc2.maps.get("BuildBCs"),
-                              [Bot(Race.Protoss, bot)],
-                              realtime=False)
-    except KeyboardInterrupt:
-        result = [-1, -1]
-    except Exception as e:
-        print(str(e))
-        print("No worries", e, " carry on please")
-    if type(result) == list and len(result) > 1:
-        result = result[0]
+    viz = False
+    save_replay = False
+    steps_per_episode = 0  # 0 actually means unlimited
+    MAX_EPISODES = 35
+    MAX_STEPS = 400
+    steps = 0
 
-    reward_sum = bot.finish_episode(result)
-    if q is not None:
-        try:
-            q.put([reward_sum, bot.agent.replay_buffer.__getstate__()])
-        except RuntimeError as e:
-            print(e)
-            return [reward_sum, bot.agent.replay_buffer.__getstate__()]
-    return [reward_sum, bot.agent.replay_buffer.__getstate__()]
+    # create a map
+    map = maps.get('BuildMarines')
+
+    # create an envirnoment
+    with sc2_env.SC2Env(map_name=map,
+                        visualize=viz) as env:
+        agent = bot
+        for i in range(MAX_EPISODES):
+            print('Starting episode {}'.format(i))
+            _ = env.reset()
+            for j in range(MAX_STEPS):
+                steps += 1
+                agent.on_step(j)  # this already sends the actions to the server
+            ep_reward = bot.finish_episode(result)  # TODO: get this to properly calculate the reward of the episode
+            print('Episode Reward: {}'.format(ep_reward))
+        if q is not None:
+            try:
+                q.put([ep_reward, bot.agent.replay_buffer.__getstate__()])
+            except RuntimeError as e:
+                print(e)
+                return [ep_reward, bot.agent.replay_buffer.__getstate__()]
+        return [ep_reward, bot.agent.replay_buffer.__getstate__()]
 
 
 # def main(episodes, agent_in, num_processes, reset_on_fail=False):
