@@ -211,7 +211,8 @@ class StarmniBot(sc2.BotAI):
 
         unit_choice = hard_coded_choice
         if SUPER_DEBUG:
-            print(build_marines_helpers.my_units_to_str(unit_choice), 'idx:', unit_choice)
+            pass
+            # print(build_marines_helpers.my_units_to_str(unit_choice), 'idx:', unit_choice)
 
         # Need to know unit type to know if placement is valid.
         success = FAILED_REWARD

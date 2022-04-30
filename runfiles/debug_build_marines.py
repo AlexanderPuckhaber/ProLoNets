@@ -78,14 +78,14 @@ if __name__ == '__main__':
     DEEPEN = args.deep  # Applies for 'prolo' deepen or no? Default false
     # torch.set_num_threads(NUM_PROCS)
     #dim_in = 14
-    dim_in = 194
-    dim_out = 44
+    dim_in = 30
+    dim_out = 10
     bot_name = AGENT_TYPE + 'SC_Macro'+'Medium'
     mp.set_sharing_strategy('file_system')
     if AGENT_TYPE == 'prolo':
-        idx_to_name, name_to_idx = sc_helpers.get_human_readable_mapping()
+        idx_to_name, name_to_idx = build_marines_helpers.get_human_readable_mapping()
         print(len(idx_to_name))
-        idx_to_action = sc_helpers.get_human_readable_action_mapping()
+        idx_to_action = build_marines_helpers.get_human_readable_action_mapping()
         policy_agent = DeepProLoNet(distribution='one_hot',
                                     bot_name=bot_name,
                                     input_dim=dim_in,

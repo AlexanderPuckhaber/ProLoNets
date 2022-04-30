@@ -50,6 +50,8 @@ MY_POSSIBLES = [COMMANDCENTER,
                 MARINE,
                 HELLION]
 
+my_other_actions = ['return to mining']
+
 def my_units_to_str(unit_idx):
     return str(MY_POSSIBLES[unit_idx])
 
@@ -149,6 +151,10 @@ def get_human_readable_action_mapping():
     for e in MY_POSSIBLES:
         e = str(e)
         e = e.replace('UnitTypeId.', '')
+        idx_to_action[idx] = e
+        idx += 1
+
+    for e in my_other_actions:
         idx_to_action[idx] = e
         idx += 1
     return idx_to_action
