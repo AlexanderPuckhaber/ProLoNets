@@ -633,7 +633,7 @@ def init_sc_build_marines_net_novec(dist='one_hot', use_gpu=False, randomized=Fa
     #-scv_count-18 > 0 go left
     w1 = np.zeros(dim_in)
     w1[state_name_to_idx['SCV']] = -1
-    c1 = [-16]
+    c1 = [-40]
 
     #barracks < 1 go left
     #-barracks > -1 go left
@@ -675,7 +675,7 @@ def init_sc_build_marines_net_novec(dist='one_hot', use_gpu=False, randomized=Fa
     # left from [0]     (Food)
     # right from []
     l0 = [[0], [], leaf_base.copy()]
-    l0[-1][action_name_to_idx['SUPPLYDEPOT']] = leaf_target_init_val
+    l0[-1][action_name_to_idx['SUPPLYDEPOT']] = leaf_target_init_val * 5
 
     # SCV
     # left from [1]     (SCV)
