@@ -501,7 +501,45 @@ class StarmniBot(sc2.BotAI):
         # await self.chat_send("reset")
         # The reward for a rollout should be proportional to the number of marines present at the end
         print("Game over!")
-        return self.units(UnitTypeId.HELLION).amount
+        reward = self.units(UnitTypeId.HELLION).amount
+
+        bot_fn = '../txts/' + self.agent.bot_name + '_victories.txt'
+        with open(bot_fn, "a") as myfile:
+            myfile.write(str(reward) + '\n')
+        self.agent.save_reward(reward)
+        R = 0
+        rewards = []
+        all_rewards = self.agent.replay_buffer.rewards_list
+        reward_sum = sum(all_rewards)
+        all_values = self.agent.replay_buffer.value_list
+        deeper_all_values = self.agent.replay_buffer.deeper_value_list
+        # Discount future rewards back to the present using gamma
+        advantages = []
+        deeper_advantages = []
+
+        for r, v, d_v in zip(all_rewards[::-1], all_values[::-1], deeper_all_values[::-1]):
+            R = r + 0.99 * R
+            rewards.insert(0, R)
+            advantages.insert(0, R - v)
+            if d_v is not None:
+                deeper_advantages.insert(0, R - d_v)
+        advantages = torch.Tensor(advantages)
+        rewards = torch.Tensor(rewards)
+
+        if len(deeper_advantages) > 0:
+            deeper_advantages = torch.Tensor(deeper_advantages)
+            deeper_advantages = (deeper_advantages - deeper_advantages.mean()) / (
+                    deeper_advantages.std() + torch.Tensor([np.finfo(np.float32).eps]))
+            self.agent.replay_buffer.deeper_advantage_list = deeper_advantages.detach().clone().cpu().numpy().tolist()
+        else:
+            self.agent.replay_buffer.deeper_advantage_list = [None] * len(all_rewards)
+        # Scale rewards
+        rewards = (rewards - rewards.mean()) / (rewards.std() + torch.Tensor([np.finfo(np.float32).eps]))
+        advantages = (advantages - advantages.mean()) / (advantages.std() + torch.Tensor([np.finfo(np.float32).eps]))
+        self.agent.replay_buffer.rewards_list = rewards.detach().clone().cpu().numpy().tolist()
+        print("AGENT REPLAY BUFFER REWARDS_LIST:\n", self.agent.replay_buffer.rewards_list)
+        self.agent.replay_buffer.advantage_list = advantages.detach().clone().cpu().numpy().tolist()
+        return reward_sum
 
 
 def run_episode(q, main_agent):
@@ -584,7 +622,7 @@ if __name__ == '__main__':
     torch.set_num_threads(NUM_PROCS)
     dim_in = 32
     dim_out = 12
-    bot_name = AGENT_TYPE + '_marines'
+    bot_name = AGENT_TYPE + '_marines_helions'
     # mp.set_start_method('spawn')
     mp.set_sharing_strategy('file_system')
     if AGENT_TYPE == 'prolo':

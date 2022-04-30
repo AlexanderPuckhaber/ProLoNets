@@ -886,7 +886,7 @@ def init_sc_build_hellions_net_novec(dist='one_hot', use_gpu=False, randomized=F
                      weights=init_weights,
                      comparators=init_comparators,
                      leaves=init_leaves,
-                     alpha=2,
+                     alpha=200,
                      vectorized=False,
                      device='cuda' if use_gpu else 'cpu',
                      is_value=False)
@@ -895,7 +895,7 @@ def init_sc_build_hellions_net_novec(dist='one_hot', use_gpu=False, randomized=F
                       weights=init_weights,
                       comparators=init_comparators,
                       leaves=init_leaves,
-                      alpha=1,
+                      alpha=100,
                       vectorized=False,
                       device='cuda' if use_gpu else 'cpu',
                       is_value=True)

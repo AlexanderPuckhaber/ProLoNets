@@ -171,7 +171,10 @@ class DeepProLoNet:
         return True
 
     def end_episode(self, timesteps, num_processes):
+        print("REPLAY BUFFER:", self.replay_buffer)
         value_loss, action_loss = self.ppo.batch_updates(self.replay_buffer, self, go_deeper=self.deepen)
+        print('VALUE_LOSS:', value_loss)
+        print('ACTION_LOSS:', action_loss)
         self.num_steps += 1
         # Copy over new decision node params from shallower network to deeper network
         bot_name = '../txts/' + self.bot_name + str(num_processes) + '_processes'
