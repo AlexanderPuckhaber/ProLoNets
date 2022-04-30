@@ -8,9 +8,6 @@ from agents.vectorized_prolonet_helpers import init_cart_nets, swap_in_node, add
     save_prolonet, load_prolonet, init_fire_nets
 import copy
 import os
-from runfiles.build_marines_helpers import TYPES
-
-from runfiles.build_marines_helpers import TYPES
 
 class DeepProLoNet:
     def __init__(self,

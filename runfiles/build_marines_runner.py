@@ -23,7 +23,7 @@ from datetime import datetime
 import traceback
 import random
 
-DEBUG = False
+DEBUG = True
 SUPER_DEBUG = False
 if SUPER_DEBUG:
     DEBUG = True

@@ -219,7 +219,7 @@ class ProLoNet(nn.Module):
         # pos = graphviz_layout(g, prog="dot")
         pos = nx.drawing.nx_agraph.graphviz_layout(g, prog='dot', args='-Grankdir=LR')
         color_list = [g.nodes[node]["color"] for node in g.nodes()]
-        nx.draw(g, pos, node_color=color_list, edge_color=edge_colors, with_labels=True, node_size=8000)
+        nx.draw(g, pos, node_color=color_list, edge_color=edge_colors, with_labels=True, node_size=20000)
         figure = plt.gcf()
         figure.set_size_inches(20, 15)
         plt.savefig('myplot.png', dpi=200)

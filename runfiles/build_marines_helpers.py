@@ -4,38 +4,6 @@ import numpy as np
 from sc2 import Race
 from enum import Enum
 
-class TYPES(Enum):
-    ARMY_COUNT = 0
-    FOOD_ARMY = 1
-    FOOD_CAP = 2
-    FOOD_USED = 3
-    IDLE_WORKER_COUNT = 4
-    LARVA_COUNT = 5
-    MINERALS = 6
-    VESPENE = 7
-    WARP_GATE_COUNT = 8
-    COMMAND_CENTER = 9
-    SUPPLY_DEPOT = 10
-    REFINERY = 11
-    BARRACKS = 12
-    ENGINEERING_BAY = 13
-    ARMORY = 14
-    FACTORY = 15
-    STARPORT = 16
-    SCV = 17
-    MARINE = 18
-    PENDING_COMMAND_CENTER = 19
-    PENDING_SUPPLY_DEPOT = 20
-    PENDING_REFINERY = 21
-    PENDING_BARRACKS = 22
-    PENDING_ENGINEERING_BAY = 23
-    PENDING_ARMORY = 24
-    PENDING_FACTORY = 25
-    PENDING_STARPORT = 26
-    PENDING_SCV = 27
-    PENDING_MARINE = 28
-    LAST_ACTION = 29
-
 MY_POSSIBLES = [COMMANDCENTER,
                 SUPPLYDEPOT,
                 REFINERY,
@@ -141,14 +109,16 @@ def get_human_readable_mapping():
     return idx_to_name, name_to_idx
 
 def get_human_readable_action_mapping():
-    idx_to_action = {}
+    idx_to_name = {}
+    name_to_idx = {}
     idx = 0
     for e in MY_POSSIBLES:
         e = str(e)
         e = e.replace('UnitTypeId.', '')
-        idx_to_action[idx] = e
+        idx_to_name[idx] = e
+        name_to_idx[e] = idx
         idx += 1
-    return idx_to_action
+    return idx_to_name, name_to_idx
 
 def get_unit_data(unit_in):
     if unit_in is None:
